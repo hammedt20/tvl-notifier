@@ -1,0 +1,15 @@
+
+services:
+  - type: cron
+    name: tvl-notifier
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    schedule: "0 9 * * *"  # 9 AM UTC daily = 5 AM EST (perfect for early US grind)
+    envVars:
+      TELEGRAM_TOKEN:
+        fromSecret: TELEGRAM_TOKEN
+      TELEGRAM_CHAT_ID:
+        fromSecret: TELEGRAM_CHAT_ID
