@@ -25,5 +25,5 @@ cron.schedule("0 9 * * *", () => {
   runTVLCheck();
 });
 
-app.get("/health", (req, res) => res.send("TVL Bot Alive 🚀"));
+app.get("/health", (req, res) => rres.status(200).send('OK'));
 app.listen(process.env.PORT || 3000);
