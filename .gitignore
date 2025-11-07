@@ -1,0 +1,25 @@
+# Environment variables (NEVER commit secrets!)
+.env
+.env.local
+.env.development
+.env.production
+
+# TVL data (we don’t want to track daily changes)
+tvl_data.json
+tvl_data.json.corrupted
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+logs
+*.log
