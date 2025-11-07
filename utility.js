@@ -5,6 +5,7 @@ const telegramBot = require("node-telegram-bot-api");
 const DATA_FILE = "tvl_data.json";
 
 const bot = new telegramBot(process.env.TELEGRAM_TOKEN);
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 async function fetchTVL() {
   const res = await axios.get("https://api.llama.fi/protocols");
@@ -69,15 +70,15 @@ const findSpikes = (todayData, yesterdayMap) => {
     const oldTvl = yesterdayMap[name] || 0;
 
     if (oldTvl && tvl > oldTvl) {
-      const change = ((tvl - old) / old) * 100;
+      const change = ((tvl - oldTvl) / oldTvl) * 100;
       if (change >= 10) {
         spikes.push({
           name,
           change: change.toFixed(1),
           tvl: (tvl / 1e9).toFixed(2),
-          chain: protocol.chain,
+          chain: p.chain,
           url:
-            protocol.url ||
+            p.url ||
             `https://defillama.com/protocol/${name
               .toLowerCase()
               .replace(/\s+/g, "-")}`,
@@ -88,21 +89,30 @@ const findSpikes = (todayData, yesterdayMap) => {
   return spikes;
 };
 
-const sendAlert = (spikes) => {
-    if (spikes.length === 0) {
-      console.log("No spikes today.");
-      return;
-    }
+async function sendAlert(spikes) {
+ 
+  let msg = `TVL BOT IS NOW LIVE IN GROUP\n\n`;
 
-    let msg = `🚀 TVL Spikes Detected (${new Date().toLocaleDateString()}):\n\n`;
+  if (spikes.length === 0) {
+    msg += `No spikes today — but bot is alive!\n`;
+    msg += `Next check: tomorrow 9 AM UTC\n`;
+    msg += `Built by @hammed_t`;
+  } else {
+    msg += `<b>TVL SPIKES DETECTED</b> (${new Date().toLocaleDateString()})\n\n`;
     spikes.forEach((s) => {
-      msg += `🔺 <b>${s.name}</b>\n`;
-      msg += `Change: <b>${s.change}%</b>\n`;
-      msg += `New TVL: <b>$${s.tvl}B</b>\n`;
-      msg += `⛓️‍💥 Chain: <b>${s.chain}</b>\n`;
-      msg += `🔗 URL: ${s.url}\n\n`;
+      msg += `<b>${s.name}</b> (+${s.change}%) → <b>$${s.tvl}B</b> [${s.chain}]\n`;
+      msg += `${s.url}\n\n`;
     });
-    bot.sendMessage(CHAT_ID, msg, { parse_mode: "Markdown" });
-} 
+    msg += `Powered by @hammed_t | https://github.com/hammedt20/tvl-notifier`;
+  }
+
+  try {
+    await bot.sendMessage(CHAT_ID, msg, { parse_mode: "HTML" });
+    console.log("ALERT SENT TO GROUP!");
+  } catch (error) {
+    console.error("TELEGRAM ERROR:", error.message);
+    
+  }
+}
 
 module.exports = { fetchTVL, loadYesterday, saveToday, findSpikes, sendAlert };
