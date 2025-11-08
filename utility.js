@@ -89,38 +89,56 @@ const findSpikes = (todayData, yesterdayMap) => {
   return spikes;
 };
 
+async function sendInChunks(bot, chatId, text, chunkSize = 4000) {
+  // Telegram messages have a 4096 character limit, 4000 is safer especially with HTML formatting
+  const chunks = [];
+
+  while (text.length > 0) {
+    if (text.length <= chunkSize) {
+      chunks.push(text);
+      break;
+    }
+
+    // Try to split at the nearest \n\n or \n to avoid breaking HTML tags or lines awkwardly
+    let idx = text.lastIndexOf("\n\n", chunkSize);
+    if (idx === -1) idx = text.lastIndexOf("\n", chunkSize);
+    if (idx === -1) idx = chunkSize; // fallback if no line break
+
+    chunks.push(text.substring(0, idx));
+    text = text.substring(idx).trim();
+  }
+
+  for (const chunk of chunks) {
+    await bot.sendMessage(chatId, chunk, { parse_mode: "HTML" });
+  }
+}
+
+
 async function sendAlert(spikes) {
   let msg = `TVL BOT IS NOW LIVE IN GROUP\n\n`;
 
   if (spikes.length === 0) {
     msg += `No spikes today — but bot is alive!\n`;
     msg += `Next check: tomorrow 9 AM UTC\n`;
-    msg += `Built by @__sakaaa`;
+    msg += `Built by @hammed_t`;
   } else {
-    const maxSpikes = 20; // ✅ limit to 20 items to prevent overflow
-    const toDisplay = spikes.slice(0, maxSpikes);
-
     msg += `<b>TVL SPIKES DETECTED</b> (${new Date().toLocaleDateString()})\n\n`;
-    toDisplay.forEach((s) => {
+    spikes.forEach((s) => {
       msg += `<b>${s.name}</b> (+${s.change}%) → <b>$${s.tvl}B</b> [${s.chain}]\n`;
       msg += `${s.url}\n\n`;
     });
-
-    if (spikes.length > maxSpikes) {
-      msg += `...and ${spikes.length - maxSpikes} more\n\n`;
-    }
-
-    msg += `Powered by @__sakaaa | github.com/sakaaa/tvl-notifier`;
+    msg += `Powered by @hammed_t | https://github.com/hammedt20/tvl-notifier`;
   }
 
   try {
-    await bot.sendMessage(CHAT_ID, msg, { parse_mode: "HTML" });
+    await sendInChunks(bot, CHAT_ID, msg);
     console.log("ALERT SENT TO GROUP!");
   } catch (error) {
     console.error("TELEGRAM ERROR:", error.message);
     console.error("Your CHAT_ID:", CHAT_ID);
   }
 }
+
 
 
 module.exports = { fetchTVL, loadYesterday, saveToday, findSpikes, sendAlert };

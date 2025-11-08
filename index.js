@@ -22,6 +22,8 @@ async function runTVLCheck() {
   console.log("✅ Check complete!");
 }
 
+runTVLCheck()
+
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
 app.get("/run-tvl-check", async (req, res) => {
