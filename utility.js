@@ -90,20 +90,27 @@ const findSpikes = (todayData, yesterdayMap) => {
 };
 
 async function sendAlert(spikes) {
- 
   let msg = `TVL BOT IS NOW LIVE IN GROUP\n\n`;
 
   if (spikes.length === 0) {
     msg += `No spikes today — but bot is alive!\n`;
     msg += `Next check: tomorrow 9 AM UTC\n`;
-    msg += `Built by @hammed_t`;
+    msg += `Built by @__sakaaa`;
   } else {
+    const maxSpikes = 20; // ✅ limit to 20 items to prevent overflow
+    const toDisplay = spikes.slice(0, maxSpikes);
+
     msg += `<b>TVL SPIKES DETECTED</b> (${new Date().toLocaleDateString()})\n\n`;
-    spikes.forEach((s) => {
+    toDisplay.forEach((s) => {
       msg += `<b>${s.name}</b> (+${s.change}%) → <b>$${s.tvl}B</b> [${s.chain}]\n`;
       msg += `${s.url}\n\n`;
     });
-    msg += `Powered by @hammed_t | https://github.com/hammedt20/tvl-notifier`;
+
+    if (spikes.length > maxSpikes) {
+      msg += `...and ${spikes.length - maxSpikes} more\n\n`;
+    }
+
+    msg += `Powered by @__sakaaa | github.com/sakaaa/tvl-notifier`;
   }
 
   try {
@@ -111,8 +118,9 @@ async function sendAlert(spikes) {
     console.log("ALERT SENT TO GROUP!");
   } catch (error) {
     console.error("TELEGRAM ERROR:", error.message);
-    
+    console.error("Your CHAT_ID:", CHAT_ID);
   }
 }
+
 
 module.exports = { fetchTVL, loadYesterday, saveToday, findSpikes, sendAlert };
