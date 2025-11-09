@@ -21,7 +21,6 @@ async function runTVLCheck() {
   saveToday(todayData); // update for tomorrow
   console.log("✅ Check complete!");
 }
-
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
 app.get("/run-tvl-check", async (req, res) => {
@@ -33,7 +32,7 @@ app.get("/run-tvl-check", async (req, res) => {
 
   try {
     await runTVLCheck();
-    res.status(200).send("TVL check done");
+    res.status(200).send("OK");
   } catch (err) {
     console.error("Error running TVL check:", err);
     res.status(500).send("Error in TVL check");
