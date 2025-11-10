@@ -23,20 +23,19 @@ async function runTVLCheck() {
 }
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
-app.get("/run-tvl-check", async (req, res) => {
+app.get("/run-tvl-check", (req, res) => {
   const key = req.query.key;
 
   if (process.env.CRON_SECRET && key !== process.env.CRON_SECRET) {
     return res.status(401).send("Unauthorized");
   }
 
-  try {
-    await runTVLCheck();
-    res.status(200).send("OK");
-  } catch (err) {
-    console.error("Error running TVL check:", err);
-    res.status(500).send("Error in TVL check");
-  }
+  res.status(200).send("OK");
+
+  runTVLCheck()
+    .then(() => console.log("✅ TVL check complete"))
+    .catch((err) => console.error("Error running TVL check:", err));
 });
+
 
 app.listen(process.env.PORT || 3000, () => console.log("Server listening..."));
