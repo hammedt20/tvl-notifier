@@ -38,4 +38,5 @@ app.get("/run-tvl-check", (req, res) => {
 });
 
 
-app.listen(process.env.PORT || 3000, () => console.log("Server listening..."));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));

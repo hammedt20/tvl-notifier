@@ -1,8 +1,7 @@
 require("dotenv").config();
-const fs = require("fs");
 const axios = require("axios");
 const telegramBot = require("node-telegram-bot-api");
-const DATA_FILE = "tvl_data.json";
+const db = require("./firebase");
 
 const bot = new telegramBot(process.env.TELEGRAM_TOKEN);
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -12,52 +11,27 @@ async function fetchTVL() {
   return res.data;
 }
 
-function loadYesterday() {
-  if (!fs.existsSync(DATA_FILE)) {
-    console.log("No tvl_data.json found → starting fresh");
+async function loadYesterday() {
+  const docRef = db.collection("tvl_data").doc("yesterday");
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
+    console.log("No data found in Firestore → starting fresh");
     return {};
   }
 
-  try {
-    const fileContent = fs.readFileSync(DATA_FILE, "utf-8").trim();
-
-    // If file is empty or only whitespace
-    if (!fileContent) {
-      console.log("tvl_data.json is empty → returning {}");
-      return {};
-    }
-
-    const parsed = JSON.parse(fileContent);
-    console.log(
-      `Loaded ${Object.keys(parsed).length} protocols from yesterday`
-    );
-    return parsed;
-  } catch (error) {
-    console.error("Corrupted tvl_data.json → resetting");
-    // Backup corrupted file (optional)
-    if (fs.existsSync(DATA_FILE)) {
-      fs.renameSync(DATA_FILE, DATA_FILE + ".corrupted");
-    }
-    return {};
-  }
+  console.log("Loaded yesterday’s data from Firestore");
+  return doc.data();
 }
 
-function saveToday(data) {
+async function saveToday(data) {
   const map = {};
   data.forEach((p) => {
-    if (p.tvl > 1_000_000) {
-      // filter tiny protocols
-      map[p.name] = p.tvl;
-    }
+    if (p.tvl > 1_000_000) map[p.name] = p.tvl;
   });
 
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(map, null, 2)); // pretty print
-    console.log(`Saved ${Object.keys(map).length} protocols to tvl_data.json`);
-  } catch (err) {
-    console.error("Failed to save tvl_data.json:", err);
-  }
-
+  await db.collection("tvl_data").doc("yesterday").set(map);
+  console.log(`Saved ${Object.keys(map).length} protocols to Firestore`);
   return map;
 }
 

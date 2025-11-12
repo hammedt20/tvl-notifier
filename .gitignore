@@ -7,6 +7,8 @@
 # TVL data (we don’t want to track daily changes)
 tvl_data.json
 tvl_data.json.corrupted
+firebase-key.json
+firebase-key.json.corrupted
 
 # Node.js
 node_modules/
