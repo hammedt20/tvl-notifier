@@ -1,10 +1,15 @@
-require("dotenv").config();
-const axios = require("axios");
-const telegramBot = require("node-telegram-bot-api");
-const db = require("./firebase");
 
-const bot = new telegramBot(process.env.TELEGRAM_TOKEN);
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+import axios from "npm:axios";
+import TelegramBot from "npm:node-telegram-bot-api";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL"),
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") // REQUIRED for writes
+);
+
+const bot = new TelegramBot(Deno.env.get("TELEGRAM_TOKEN"));
+const CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
 async function fetchTVL() {
   const res = await axios.get("https://api.llama.fi/protocols");
@@ -12,26 +17,24 @@ async function fetchTVL() {
 }
 
 async function loadYesterday() {
-  const docRef = db.collection("tvl_data").doc("yesterday");
-  const doc = await docRef.get();
+  const { data, error } = await supabase
+    .from("tvl_data")
+    .select("data")
+    .eq("id", "yesterday")
+    .single();
 
-  if (!doc.exists) {
-    console.log("No data found in Firestore → starting fresh");
-    return {};
-  }
-
-  console.log("Loaded yesterday’s data from Firestore");
-  return doc.data();
+  if (error || !data) return {};
+  return data.data;
 }
 
-async function saveToday(data) {
+async function saveToday(protocols) {
   const map = {};
-  data.forEach((p) => {
+  protocols.forEach((p) => {
     if (p.tvl > 1_000_000) map[p.name] = p.tvl;
   });
 
-  await db.collection("tvl_data").doc("yesterday").set(map);
-  console.log(`Saved ${Object.keys(map).length} protocols to Firestore`);
+  await supabase.from("tvl_data").upsert({ id: "yesterday", data: map });
+
   return map;
 }
 
@@ -87,7 +90,6 @@ async function sendInChunks(bot, chatId, text, chunkSize = 4000) {
   }
 }
 
-
 async function sendAlert(spikes) {
   let msg = `TVL BOT IS NOW LIVE IN GROUP\n\n`;
 
@@ -112,7 +114,5 @@ async function sendAlert(spikes) {
     console.error("Your CHAT_ID:", CHAT_ID);
   }
 }
-
-
 
 module.exports = { fetchTVL, loadYesterday, saveToday, findSpikes, sendAlert };
